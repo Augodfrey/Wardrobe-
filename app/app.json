@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Wardrobe",
+    "slug": "wardrobe",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Wardrobe uses the camera to scan clothing tags and photograph your items."
+      }
+    },
+    "android": {
+      "permissions": ["CAMERA"]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Wardrobe to use the camera to scan tags and photograph clothing."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Wardrobe to access your photos so you can add clothing from your library."
+        }
+      ]
+    ]
+  }
+}
