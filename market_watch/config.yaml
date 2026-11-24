@@ -1,0 +1,58 @@
+# Market Watch configuration.
+# This tool ONLY sends signals. It has no broker integration and never places trades.
+
+general:
+  poll_seconds: 60              # how often the live loop runs
+  volume_window_minutes: 5      # "last five minutes" of volume
+  baseline_days: 30             # calendar days of history for the same-time-of-day average
+  min_baseline_days: 5          # need at least this many prior sessions before a symbol can alert
+  breakout_lookback_minutes: 60 # "last hour's" high / low (current bar excluded)
+
+alerts:
+  cooldown_minutes: 60          # max one alert per symbol per this many minutes
+  log_file: alerts.log          # every alert is appended here with a timestamp
+  state_file: .alert_state.json # remembers cooldowns across restarts
+  notifier: ntfy                # ntfy | pushover | none (console + log only)
+  ntfy:
+    server: https://ntfy.sh
+    # Anyone who knows the topic name can read it -- pick something hard to guess.
+    # Can also be set with the NTFY_TOPIC environment variable.
+    topic: change-me-to-a-random-topic-name
+  pushover:
+    # Secrets come from environment variables, never this file.
+    user_key_env: PUSHOVER_USER_KEY
+    app_token_env: PUSHOVER_APP_TOKEN
+
+watchlists:
+  stocks:
+    symbols: [AAPL, MSFT, NVDA, TSLA, AMD, META, AMZN, GOOGL]
+    session:                    # defines the trading day (day high/low, VWAP, previous day)
+      timezone: America/New_York
+      start: "09:30"
+      end: "16:00"
+    alert_hours:                # when the live loop checks for signals
+      start: "09:35"
+      end: "16:00"
+    thresholds:
+      volume_ratio: 2.5         # 5-min volume vs. 30-day average for the same time of day
+      move_pct: 1.5             # % off the day's high (bearish) / day's low (bullish)
+
+  futures:
+    # Bare roots are fine; "=F" (Yahoo's continuous front-month suffix) is added automatically.
+    symbols: [MNQ, MES]
+    session:                    # CME Globex day: 18:00 ET (prior evening) to 17:00 ET
+      timezone: America/New_York
+      start: "18:00"
+      end: "17:00"
+    alert_hours:                # US cash hours by default; widen to watch overnight
+      start: "09:35"
+      end: "16:00"
+    thresholds:
+      volume_ratio: 2.5
+      move_pct: 0.5
+
+backtest:
+  days: 90                      # how far back to replay
+  interval: 5m                  # Yahoo: 1m reaches ~30 days back, 5m ~60 days, 1h ~2 years
+  forward_days: [1, 2, 3]       # follow-through horizons, in trading days
+  output_csv: backtest_alerts.csv

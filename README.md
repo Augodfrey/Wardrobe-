@@ -77,3 +77,9 @@ Expo Go app on your phone.
 - Possible extensions: outfit history/favorites, weather-aware suggestions
   (pull the forecast into the recommend prompt), "packing list for a trip", and
   laundry/wear tracking.
+
+## Also in this repo
+
+`market_watch/` is a separate Python tool that watches stock and futures watchlists for
+volume breakout signals and pushes alerts. It only sends signals and never trades. See
+[market_watch/README.md](market_watch/README.md).

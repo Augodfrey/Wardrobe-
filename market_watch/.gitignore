@@ -1,0 +1,5 @@
+alerts.log
+.alert_state.json
+backtest_alerts.csv
+__pycache__/
+.pytest_cache/
