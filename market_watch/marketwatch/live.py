@@ -63,7 +63,11 @@ class LiveWatcher:
             df = df[df.index >= cutoff]
             self.history[t] = df  # keep the cache growing through the day
             # Drop the bar still forming: it starts less than a minute ago.
-            out[t] = df[df.index + pd.Timedelta(minutes=1) <= pd.Timestamp(now_utc)]
+            done = df[df.index + pd.Timedelta(minutes=1) <= pd.Timestamp(now_utc)]
+            # Yahoo reports the bar it is still filling with volume 0; drop it too.
+            if len(done) and done["volume"].iloc[-1] == 0:
+                done = done.iloc[:-1]
+            out[t] = done
         return out
 
     # -- evaluation ---------------------------------------------------------

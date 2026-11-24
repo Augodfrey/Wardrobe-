@@ -3,6 +3,7 @@
     python -m marketwatch live                 # watch during market hours
     python -m marketwatch live --once          # single check, then exit
     python -m marketwatch backtest             # replay the last 3 months
+    python -m marketwatch scan                 # check all bars since the last scan
     python -m marketwatch test-alert           # send a sample push notification
 
 Signals only: this program has no broker connection and never places trades.
@@ -17,6 +18,7 @@ from .alerts import Alert, Notifier, log_alert
 from .backtest import run_backtest
 from .config import load_config
 from .live import LiveWatcher
+from .scan import run_scan
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -35,6 +37,9 @@ def main(argv: list[str] | None = None) -> None:
     bt.add_argument("--data-dir", help="read <SYMBOL>.csv bars from this folder instead of Yahoo")
     bt.add_argument("--output", help="CSV file for the alert list")
 
+    sc = sub.add_parser("scan", help="check every bar since the last scan (for hourly schedulers)")
+    sc.add_argument("--no-push", action="store_true", help="print and log only; skip ntfy/Pushover")
+
     sub.add_parser("test-alert", help="send a sample alert through the configured push service")
 
     args = p.parse_args(argv)
@@ -49,6 +54,10 @@ def main(argv: list[str] | None = None) -> None:
     elif args.cmd == "backtest":
         run_backtest(cfg, days=args.days, interval=args.interval,
                      data_dir=args.data_dir, output=args.output)
+    elif args.cmd == "scan":
+        if args.no_push:
+            cfg.notifier = "none"
+        run_scan(cfg)
     elif args.cmd == "test-alert":
         alert = Alert(time=datetime.now().astimezone(), watchlist="test", ticker="TEST",
                       direction="BULLISH", price=123.45, pct_move=1.8, vol_ratio=3.2)
