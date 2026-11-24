@@ -147,6 +147,27 @@ begin
   assert (select scheduled_for <= now() from public.review_requests where estimate_id = e.id), 'paid moves review to now (whichever first)';
 end $$;
 
+-- REVIEW DISPATCH: claimed exactly once; click tracked through the redirect
+reset role;
+update public.shops set google_review_url = 'https://g.page/r/smogzone/review' where id = '00000000-0000-0000-0000-000000238473';
+do $$
+declare n1 int; n2 int; code text; url text;
+begin
+  select count(*) into n1 from public.claim_due_reviews(50);
+  select count(*) into n2 from public.claim_due_reviews(50);
+  assert n1 = 1 and n2 = 0, format('claimed once (%s then %s)', n1, n2);
+  select short_code into code from public.review_requests limit 1;
+  url := public.record_review_click(code);
+  assert url = 'https://g.page/r/smogzone/review', 'redirect target';
+  perform public.record_review_click(code);
+  assert (select click_count from public.review_requests where short_code = code) = 2, 'clicks counted';
+  -- a new signature/payment on the same visit never creates a second request
+  perform public.schedule_review((select v from t where k='e'), 'paid');
+  assert (select count(*) from public.review_requests where estimate_id = (select v from t where k='e')) = 1, 'once per visit';
+  assert (select status from public.review_requests where estimate_id = (select v from t where k='e')) = 'sent', 'not re-queued';
+end $$;
+set local role authenticated;
+
 -- OWNER cannot edit the invoice either
 select set_config('request.jwt.uid', '11111111-1111-1111-1111-111111111111', true);
 do $$ begin

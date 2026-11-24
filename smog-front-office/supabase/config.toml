@@ -1,0 +1,30 @@
+# Supabase CLI project config (excerpt). `supabase start` / `supabase functions deploy`.
+project_id = "smog-front-office"
+
+[auth]
+site_url = "http://localhost:5173"
+enable_signup = false          # staff are invited by the owner
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[functions.send-signing-link]
+import_map = "./functions/import_map.json"
+[functions.documents]
+import_map = "./functions/import_map.json"
+[functions.invite-user]
+import_map = "./functions/import_map.json"
+# Public endpoints: customers and webhooks have no Supabase JWT
+[functions.public-sign]
+verify_jwt = false
+import_map = "./functions/import_map.json"
+[functions.r]
+verify_jwt = false
+import_map = "./functions/import_map.json"
+[functions.twilio-inbound]
+verify_jwt = false
+import_map = "./functions/import_map.json"
+[functions.review-dispatch]
+verify_jwt = false             # protected by CRON_SECRET instead
+import_map = "./functions/import_map.json"
