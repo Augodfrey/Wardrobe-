@@ -3,3 +3,4 @@ alerts.log
 backtest_alerts.csv
 __pycache__/
 .pytest_cache/
+.alert_state_scan.json
