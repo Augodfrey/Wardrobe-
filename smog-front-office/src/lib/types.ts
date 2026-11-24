@@ -90,3 +90,8 @@ export interface AuditEntry {
   id: number; table_name: string; row_id: string; action: string; actor_id: string | null;
   before: Record<string, unknown> | null; after: Record<string, unknown> | null; created_at: string;
 }
+
+export interface Vehicle {
+  id: string; plate: string | null; plate_state: string | null; vin: string | null; year: number | null;
+  make: string | null; model: string | null; company_id: string | null; customer_id: string | null;
+}
