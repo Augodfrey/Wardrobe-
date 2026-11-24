@@ -180,3 +180,16 @@ def test_live_survives_empty_download(cfg, monkeypatch):
     monkeypatch.setattr(data, "fetch_yahoo", lambda tickers, *a, **k: {t: data._tidy(None) for t in tickers})
     watcher = LiveWatcher(cfg)
     assert watcher.check_watchlist(wl_by(cfg, "stocks"), datetime(2026, 11, 20, 16, tzinfo=timezone.utc)) == []
+
+
+def test_repairs_yahoo_cumulative_volume_glitch():
+    from marketwatch.data import repair_cumulative_volume
+    idx = pd.date_range("2026-11-24 09:30", periods=120, freq="1min", tz=NY).as_unit("s")
+    vol = pd.Series(50_000.0, index=idx)
+    vol.iloc[0] = 2_000_000.0            # real opening auction: kept
+    vol.iloc[60] = vol.iloc[:60].sum()    # bar stamped with the day's running total
+    vol.iloc[90] = 600_000.0              # real 12x burst: kept
+    fixed = repair_cumulative_volume(vol)
+    assert fixed.iloc[0] == 2_000_000.0
+    assert fixed.iloc[60] == 50_000.0
+    assert fixed.iloc[90] == 600_000.0

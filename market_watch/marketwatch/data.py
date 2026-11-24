@@ -11,6 +11,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 log = logging.getLogger(__name__)
@@ -46,8 +47,44 @@ def _tidy(df: pd.DataFrame) -> pd.DataFrame:
     if df.index.tz is None:
         df.index = df.index.tz_localize("UTC")
     df = df[~df.index.duplicated(keep="last")].sort_index()
-    df["volume"] = df["volume"].fillna(0).astype(float)
+    df["volume"] = repair_cumulative_volume(df["volume"].fillna(0).astype(float))
     return df
+
+
+def repair_cumulative_volume(vol: pd.Series, spike: float = 20.0, share: float = 0.5,
+                             session_gap_minutes: int = 30) -> pd.Series:
+    """Yahoo sometimes stamps a 1-minute bar with the whole day's running volume
+    (e.g. NVDA showing 193M shares in one minute). Such a bar is both far above the
+    recent typical bar and about as large as everything traded so far that session.
+    Replace it with the recent median so it can't fake a volume spike or inflate the
+    baseline. A genuine opening-auction bar is the session's first bar and is kept."""
+    if vol.empty:
+        return vol
+    values = vol.to_numpy(copy=True)
+    times = (vol.index.as_unit("ns").asi8 // 60_000_000_000
+             if isinstance(vol.index, pd.DatetimeIndex) else None)
+    gap = session_gap_minutes
+    recent: list[float] = []
+    session_sum = 0.0
+    prev_t = None
+    for i, v in enumerate(values):
+        t = int(times[i]) if times is not None else i
+        if prev_t is None or t - prev_t > gap:  # new session
+            session_sum = 0.0
+            first = True
+        else:
+            first = False
+        prev_t = t
+        if not first and len(recent) >= 10:
+            med = float(np.median(recent[-30:]))
+            if med > 0 and v > spike * med and v >= share * session_sum:
+                values[i] = med
+                v = med
+        recent.append(v)
+        if len(recent) > 60:
+            del recent[:-30]
+        session_sum += v
+    return pd.Series(values, index=vol.index, name=vol.name)
 
 
 def _split_download(raw: pd.DataFrame, tickers: list[str]) -> dict[str, pd.DataFrame]:
